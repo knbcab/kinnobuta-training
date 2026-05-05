@@ -30,8 +30,12 @@ export default function QuestionClient({
   prevQuestionId,
   totalQuestions,
 }: Props) {
-  const startTime = useRef(Date.now())
+  const startTime = useRef<number>(0)
   const chatBottomRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    startTime.current = Date.now()
+  }, [])
 
   const [answer, setAnswer] = useState(existingAnswer ?? "")
   const [explanation, setExplanation] = useState(existingExplanation ?? "")
