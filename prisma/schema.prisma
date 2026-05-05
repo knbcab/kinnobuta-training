@@ -1,0 +1,139 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ──────────────────────────────────────────────
+// NextAuth required models
+// ──────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  accounts      Account[]
+  sessions      Session[]
+
+  // Staff fields
+  role          UserRole  @default(STAFF)
+  assignedBrand Brand?
+  assignedRole  String?
+  language      Language  @default(EN)
+  managerId     String?
+  status        Status    @default(IN_CURRICULUM)
+
+  manager       User?     @relation("ManagerStaff", fields: [managerId], references: [id])
+  managedStaff  User[]    @relation("ManagerStaff")
+  responses     Response[]
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ──────────────────────────────────────────────
+// App models
+// ──────────────────────────────────────────────
+
+model Question {
+  id                  String      @id @default(cuid())
+  category            String
+  orderInCurriculum   Int         @unique
+  promptEn            String
+  promptJa            String?
+  answerType          AnswerType  @default(FREE_TEXT)
+  explanationDirection String?
+  relatedPrinciples   String?
+
+  responses Response[]
+
+  createdAt DateTime @default(now())
+}
+
+model Response {
+  id            String   @id @default(cuid())
+  userId        String
+  questionId    String
+  answerText    String
+  aiExplanation String?
+  timeSpentSeconds Int?
+  createdAt     DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question Question @relation(fields: [questionId], references: [id])
+
+  @@unique([userId, questionId])
+}
+
+// ──────────────────────────────────────────────
+// Enums
+// ──────────────────────────────────────────────
+
+enum UserRole {
+  STAFF
+  ADMIN
+}
+
+enum Brand {
+  KINNOBUTA
+  ZETTON
+  HIBI
+}
+
+enum Language {
+  EN
+  TL
+}
+
+enum Status {
+  IN_CURRICULUM
+  IN_EXAM
+  PASSED
+  REJECTED
+  DROPPED
+}
+
+enum AnswerType {
+  FREE_TEXT
+  MULTIPLE_CHOICE
+}
